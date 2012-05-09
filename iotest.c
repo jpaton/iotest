@@ -10,8 +10,7 @@
  *       Revision:  none
  *       Compiler:  gcc
  *
- *         Author:  YOUR NAME (),
- *        Company:
+ *         Author:  James Paton (paton@cs.wisc.edu).
  *
  * =====================================================================================
  */
@@ -66,6 +65,10 @@ int main(int argc, char **argv) {
                 perror("");
                 exit(ret);
             }
+		if (lseek(f, -PAGE_SIZE, SEEK_CUR) < 0) {
+		    perror("");
+		    exit(EXIT_FAILURE);
+		}
         }
         if (clock_gettime(CLOCK_REALTIME, &endtime)) {
             perror("");
@@ -75,10 +78,6 @@ int main(int argc, char **argv) {
         long elapsed = (endtime.tv_sec * pow(10, 9) + endtime.tv_nsec) -
             (starttime.tv_sec * pow(10, 9) + starttime.tv_nsec);
         printf("%d,%d\n", block, elapsed);
-        if (lseek(f, -PAGE_SIZE, SEEK_CUR) < 0) {
-            perror("");
-            exit(EXIT_FAILURE);
-        }
         block++;
     }
     close(f);
