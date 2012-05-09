@@ -33,10 +33,11 @@
 #define PAGE_SIZE 512
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        printf("Usage: %s <dev filename>\n",  argv[0]);
+    if (argc != 3) {
+        printf("Usage: %s <dev filename> <max block>\n",  argv[0]);
         exit(EXIT_FAILURE);
     }
+    int max_block = atoi(argv[2]);
     // allocate a page-aligned buffer
     void * buf;
     if (posix_memalign(&buf, PAGE_SIZE, 2 * PAGE_SIZE)) {
@@ -65,7 +66,7 @@ int main(int argc, char **argv) {
                 perror("");
                 exit(ret);
             }
-		if (lseek(f, -PAGE_SIZE, SEEK_CUR) < 0) {
+		if (lseek(f, -ret, SEEK_CUR) < 0) {
 		    perror("");
 		    exit(EXIT_FAILURE);
 		}
@@ -79,6 +80,11 @@ int main(int argc, char **argv) {
             (starttime.tv_sec * pow(10, 9) + starttime.tv_nsec);
         printf("%d,%d\n", block, elapsed);
         block++;
+	if (max_block != 0 && block >= max_block) break;
+	if (lseek(f, PAGE_SIZE, SEEK_CUR) < 0) {
+	    perror("lseek");
+	    exit(EXIT_FAILURE);
+	}
     }
     close(f);
     return 0;
