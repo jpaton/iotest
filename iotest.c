@@ -14,11 +14,13 @@
  *
  * =====================================================================================
  */
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -34,7 +36,6 @@
 #include <mach/mach.h>
 
 #define OPEN_FLAGS O_RDONLY
-#define _GNU_SOURCE
 #define setup(x) fcntl(x, F_NOCACHE, 1);
 
 #else // LINUX
@@ -43,7 +44,6 @@
 #define setup(x)
 
 #endif
-
 
 /* Gets current time. Taken from https://gist.github.com/1087739 */
 void current_time(struct timespec *ts) {
