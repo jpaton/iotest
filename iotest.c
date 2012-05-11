@@ -15,14 +15,11 @@
  * =====================================================================================
  */
 
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
@@ -31,6 +28,37 @@
 #include <time.h>
 
 #define PAGE_SIZE 512
+
+#ifdef __MACH__ // MAC OS X
+#include <mach/clock.h>
+#include <mach/mach.h>
+
+#define OPEN_FLAGS O_RDONLY
+#define _GNU_SOURCE
+#define setup(x) fcntl(x, F_NOCACHE, 1);
+
+#else // LINUX
+
+#define OPEN_FLAGS O_RDONLY | O_DIRECT
+#define setup(x)
+
+#endif
+
+
+/* Gets current time. Taken from https://gist.github.com/1087739 */
+void current_time(struct timespec *ts) {
+#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    ts->tv_sec = mts.tv_sec;
+    ts->tv_nsec = mts.tv_nsec;
+#else
+    clock_gettime(CLOCK_REALTIME, ts);
+#endif
+}
 
 int main(int argc, char **argv) {
     if (argc != 3) {
@@ -44,7 +72,8 @@ int main(int argc, char **argv) {
         perror("Error occurred");
         exit(EXIT_FAILURE);
     }
-    int f = open(argv[1], O_RDONLY | O_DIRECT, 0);
+    int f = open(argv[1], OPEN_FLAGS, 0);
+    setup(f);
     if (f < 0) {
         perror("");
         exit(f);
@@ -55,11 +84,8 @@ int main(int argc, char **argv) {
     while (ret) {
         struct timespec starttime;
         struct timespec endtime;
-        clock_getres(CLOCK_REALTIME, &starttime);
-        if (clock_gettime(CLOCK_REALTIME, &starttime)) {
-            perror("");
-            exit(EXIT_FAILURE);
-        }
+        //if (clock_gettime(CLOCK_REALTIME, &starttime)) {
+        current_time(&starttime);
         for (int i = 0; i < 10; i++) {
             ret = read(f, buf, 2 * PAGE_SIZE);
             if (ret < 0) {
@@ -71,10 +97,7 @@ int main(int argc, char **argv) {
 		    exit(EXIT_FAILURE);
 		}
         }
-        if (clock_gettime(CLOCK_REALTIME, &endtime)) {
-            perror("");
-            exit(EXIT_FAILURE);
-        }
+	current_time(&endtime);
         // compute elapsed time
         long elapsed = (endtime.tv_sec * pow(10, 9) + endtime.tv_nsec) -
             (starttime.tv_sec * pow(10, 9) + starttime.tv_nsec);
