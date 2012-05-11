@@ -84,7 +84,6 @@ int main(int argc, char **argv) {
     while (ret) {
         struct timespec starttime;
         struct timespec endtime;
-        //if (clock_gettime(CLOCK_REALTIME, &starttime)) {
         current_time(&starttime);
         for (int i = 0; i < 10; i++) {
             ret = read(f, buf, 2 * PAGE_SIZE);
