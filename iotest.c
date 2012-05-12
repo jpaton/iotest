@@ -48,66 +48,66 @@
 /* Gets current time. Taken from https://gist.github.com/1087739 */
 void current_time(struct timespec *ts) {
 #ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
-    clock_serv_t cclock;
-    mach_timespec_t mts;
-    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-    clock_get_time(cclock, &mts);
-    mach_port_deallocate(mach_task_self(), cclock);
-    ts->tv_sec = mts.tv_sec;
-    ts->tv_nsec = mts.tv_nsec;
+  clock_serv_t cclock;
+  mach_timespec_t mts;
+  host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+  clock_get_time(cclock, &mts);
+  mach_port_deallocate(mach_task_self(), cclock);
+  ts->tv_sec = mts.tv_sec;
+  ts->tv_nsec = mts.tv_nsec;
 #else
-    clock_gettime(CLOCK_REALTIME, ts);
+  clock_gettime(CLOCK_REALTIME, ts);
 #endif
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        printf("Usage: %s <dev filename> <max block>\n",  argv[0]);
-        exit(EXIT_FAILURE);
-    }
-    int max_block = atoi(argv[2]);
-    // allocate a page-aligned buffer
-    void * buf;
-    if (posix_memalign(&buf, PAGE_SIZE, 2 * PAGE_SIZE)) {
-        perror("Error occurred");
-        exit(EXIT_FAILURE);
-    }
-    int f = open(argv[1], OPEN_FLAGS, 0);
-    setup(f);
-    if (f < 0) {
+  if (argc != 3) {
+    printf("Usage: %s <dev filename> <max block>\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
+  int max_block = atoi(argv[2]);
+  // allocate a page-aligned buffer
+  void * buf;
+  if (posix_memalign(&buf, PAGE_SIZE, 2 * PAGE_SIZE)) {
+    perror("Error occurred");
+    exit(EXIT_FAILURE);
+  }
+  int f = open(argv[1], OPEN_FLAGS, 0);
+  setup(f);
+  if (f < 0) {
+    perror("");
+    exit(f);
+  }
+  // read bytes
+  int block = 0;
+  int ret = 1;
+  while (ret) {
+    struct timespec starttime;
+    struct timespec endtime;
+    current_time(&starttime);
+    for (int i = 0; i < 10; i++) {
+      ret = read(f, buf, 2 * PAGE_SIZE);
+      if (ret < 0) {
         perror("");
-        exit(f);
+        exit(ret);
+      }
+      if (lseek(f, -ret, SEEK_CUR) < 0) {
+        perror("");
+        exit(EXIT_FAILURE);
+      }
     }
-    // read bytes
-    int block = 0;
-    int ret = 1;
-    while (ret) {
-        struct timespec starttime;
-        struct timespec endtime;
-        current_time(&starttime);
-        for (int i = 0; i < 10; i++) {
-            ret = read(f, buf, 2 * PAGE_SIZE);
-            if (ret < 0) {
-                perror("");
-                exit(ret);
-            }
-		if (lseek(f, -ret, SEEK_CUR) < 0) {
-		    perror("");
-		    exit(EXIT_FAILURE);
-		}
-        }
-	current_time(&endtime);
-        // compute elapsed time
-        long elapsed = (endtime.tv_sec * pow(10, 9) + endtime.tv_nsec) -
+    current_time(&endtime);
+    // compute elapsed time
+    long elapsed = (endtime.tv_sec * pow(10, 9) + endtime.tv_nsec) -
             (starttime.tv_sec * pow(10, 9) + starttime.tv_nsec);
-        printf("%d,%d\n", block, elapsed);
-        block++;
-	if (max_block != 0 && block >= max_block) break;
-	if (lseek(f, PAGE_SIZE, SEEK_CUR) < 0) {
-	    perror("lseek");
-	    exit(EXIT_FAILURE);
-	}
+    printf("%d,%d\n", block, elapsed);
+    block++;
+    if (max_block != 0 && block >= max_block) break;
+    if (lseek(f, PAGE_SIZE, SEEK_CUR) < 0) {
+      perror("lseek");
+      exit(EXIT_FAILURE);
     }
-    close(f);
-    return 0;
+  }
+  close(f);
+  return 0;
 }
