@@ -85,17 +85,17 @@ int main(int argc, char **argv) {
   while (ret) {
     struct timespec starttime;
     struct timespec endtime;
-    current_time(&starttime);
     for (int i = 0; i < 10; i++) {
+      current_time(&starttime);
       ret = read(f, buf, 2 * PAGE_SIZE);
+      current_time(&endtime);
       die_on_true(ret < 0, "read");
       die_on_true(lseek(f, -ret, SEEK_CUR) < 0, "lseek");
+      // compute elapsed time
+      long elapsed = (endtime.tv_sec * pow(10, 9) + endtime.tv_nsec) -
+              (starttime.tv_sec * pow(10, 9) + starttime.tv_nsec);
+      printf("%d,%d\n", block, elapsed);
     }
-    current_time(&endtime);
-    // compute elapsed time
-    long elapsed = (endtime.tv_sec * pow(10, 9) + endtime.tv_nsec) -
-            (starttime.tv_sec * pow(10, 9) + starttime.tv_nsec);
-    printf("%d,%d\n", block, elapsed);
     block++;
     if (max_block != 0 && block >= max_block) break;
     die_on_true(lseek(f, PAGE_SIZE, SEEK_CUR) < 0, "lseek");
