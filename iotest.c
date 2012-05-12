@@ -45,6 +45,13 @@
 
 #endif
 
+static inline void die_on_true(bool value, char * msg) {
+  if (value) {
+    perror(msg);
+    exit(EXIT_FAILURE);
+  }
+}
+
 /* Gets current time. Taken from https://gist.github.com/1087739 */
 void current_time(struct timespec *ts) {
 #ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
@@ -68,16 +75,10 @@ int main(int argc, char **argv) {
   int max_block = atoi(argv[2]);
   // allocate a page-aligned buffer
   void * buf;
-  if (posix_memalign(&buf, PAGE_SIZE, 2 * PAGE_SIZE)) {
-    perror("Error occurred");
-    exit(EXIT_FAILURE);
-  }
+  die_on_true(posix_memalign(&buf, PAGE_SIZE, 2 * PAGE_SIZE), "posix_memalign");
   int f = open(argv[1], OPEN_FLAGS, 0);
   setup(f);
-  if (f < 0) {
-    perror("");
-    exit(f);
-  }
+  die_on_true(f < 0, "fcntl");
   // read bytes
   int block = 0;
   int ret = 1;
@@ -87,14 +88,8 @@ int main(int argc, char **argv) {
     current_time(&starttime);
     for (int i = 0; i < 10; i++) {
       ret = read(f, buf, 2 * PAGE_SIZE);
-      if (ret < 0) {
-        perror("");
-        exit(ret);
-      }
-      if (lseek(f, -ret, SEEK_CUR) < 0) {
-        perror("");
-        exit(EXIT_FAILURE);
-      }
+      die_on_true(ret < 0, "read");
+      die_on_true(lseek(f, -ret, SEEK_CUR) < 0, "lseek");
     }
     current_time(&endtime);
     // compute elapsed time
@@ -103,10 +98,7 @@ int main(int argc, char **argv) {
     printf("%d,%d\n", block, elapsed);
     block++;
     if (max_block != 0 && block >= max_block) break;
-    if (lseek(f, PAGE_SIZE, SEEK_CUR) < 0) {
-      perror("lseek");
-      exit(EXIT_FAILURE);
-    }
+    die_on_true(lseek(f, PAGE_SIZE, SEEK_CUR) < 0, "lseek");
   }
   close(f);
   return 0;
