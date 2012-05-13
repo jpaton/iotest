@@ -38,7 +38,7 @@
 #include <mach/mach.h>
 
 #define OPEN_FLAGS O_RDONLY
-#define setup(x) fcntl(x, F_NOCACHE, 1);
+#define setup(x) fcntl(x, F_NOCACHE, 1)
 
 #else // LINUX
 
@@ -85,12 +85,12 @@ void run_sequential_test(
   
   // open file for raw I/O
   int f = open(filename, OPEN_FLAGS, 0);
-  setup(f);
-  die_on_true(f < 0, "fcntl");
+  die_on_true(setup(f) < 0, "fcntl");
+  die_on_true(lseek(f, PAGE_SIZE * min_sector, SEEK_SET), "lseek");
   
   // read bytes
   int ret = 1;
-  for (int block = 0; block < max_sector; block++) {
+  for (int block = min_sector; block < max_sector; block++) {
     struct timespec starttime;
     struct timespec endtime;
     for (int i = 0; i < num_trials; i++) {
