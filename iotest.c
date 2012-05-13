@@ -43,7 +43,7 @@
 #else // LINUX
 
 #define OPEN_FLAGS O_RDONLY | O_DIRECT
-#define setup(x)
+#define setup(x) 0
 
 #endif
 
@@ -86,7 +86,7 @@ void run_sequential_test(
   // open file for raw I/O
   int f = open(filename, OPEN_FLAGS, 0);
   die_on_true(setup(f) < 0, "fcntl");
-  die_on_true(lseek(f, PAGE_SIZE * min_sector, SEEK_SET), "lseek");
+  die_on_true(lseek(f, PAGE_SIZE * min_sector, SEEK_SET) < 0, "lseek");
   
   // read bytes
   int ret = 1;
