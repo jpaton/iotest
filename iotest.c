@@ -97,9 +97,12 @@ void run_sequential_test(
       die_on_true(ret < 0, "read");
       die_on_true(lseek(f, -ret, SEEK_CUR) < 0, "lseek");
       // compute elapsed time
-      long elapsed = (endtime.tv_sec * pow(10, 9) + endtime.tv_nsec) -
-              (starttime.tv_sec * pow(10, 9) + starttime.tv_nsec);
-      printf("%d,%d\n", block, elapsed);
+      unsigned long elapsed = (
+        (unsigned long) endtime.tv_sec * pow(10, 9) + 
+        (unsigned long) endtime.tv_nsec) - 
+        ((unsigned long) starttime.tv_sec * pow(10, 9) + 
+        starttime.tv_nsec);
+      printf("%d,%lu\n", block, elapsed);
     }
     block++;
     if (max_sector != 0 && block >= max_sector) break;
