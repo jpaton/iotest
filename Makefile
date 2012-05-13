@@ -6,6 +6,6 @@ LFLAGS := -lrt
 endif
 
 all: iotest.c
-	gcc -std=c99 -o iotest iotest.c $(LFLAGS)
+	gcc -std=c99 -Wall -o iotest iotest.c $(LFLAGS)
 clean:
 	rm iotest
