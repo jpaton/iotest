@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <time.h>
+#include <stdint.h>
 
 #define PAGE_SIZE 512
 
@@ -67,16 +68,20 @@ void current_time(struct timespec *ts) {
 #endif
 }
 
-int main(int argc, char **argv) {
-  if (argc != 3) {
-    printf("Usage: %s <dev filename> <max block>\n", argv[0]);
-    exit(EXIT_FAILURE);
-  }
-  int max_block = atoi(argv[2]);
+/**
+ * Runs the sequential test. For each sector in range, for a number of trials,
+ * fetch that sector and the next sector, printing out times for each one.
+ */
+void run_sequential_test(
+        char * filename, 
+        int num_trials, 
+        int min_sector,
+        int max_sector
+) {
   // allocate a page-aligned buffer
   void * buf;
   die_on_true(posix_memalign(&buf, PAGE_SIZE, 2 * PAGE_SIZE), "posix_memalign");
-  int f = open(argv[1], OPEN_FLAGS, 0);
+  int f = open(filename, OPEN_FLAGS, 0);
   setup(f);
   die_on_true(f < 0, "fcntl");
   // read bytes
@@ -85,7 +90,7 @@ int main(int argc, char **argv) {
   while (ret) {
     struct timespec starttime;
     struct timespec endtime;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < num_trials; i++) {
       current_time(&starttime);
       ret = read(f, buf, 2 * PAGE_SIZE);
       current_time(&endtime);
@@ -97,9 +102,50 @@ int main(int argc, char **argv) {
       printf("%d,%d\n", block, elapsed);
     }
     block++;
-    if (max_block != 0 && block >= max_block) break;
+    if (max_sector != 0 && block >= max_sector) break;
     die_on_true(lseek(f, PAGE_SIZE, SEEK_CUR) < 0, "lseek");
   }
   close(f);
+}
+
+void print_usage(char * exec_name) {
+    printf("Usage: %s <dev filename> [-s starting sector] [-e ending sector] [-n number of trials]\n", exec_name);
+}
+
+int main(int argc, char **argv) {
+  if (argc < 2) {
+    print_usage(argv[0]);
+    exit(EXIT_FAILURE);
+  }
+  
+  // default parameters
+  char * filename = argv[1]; // no default, obviously
+  int min_sector = 0;
+  int max_sector = INT32_MAX;
+  int num_trials = 10;
+  
+  char * optstring = "s:e:n:";
+  optind = 2;
+  int ch;
+  while ((ch = getopt(argc, argv, optstring)) != -1) {
+    switch (ch) {
+      case 's':
+        min_sector = atoi(optarg);
+        break;
+      case 'e':
+        max_sector = atoi(optarg);
+        break;
+      case 'n':
+        num_trials = atoi(optarg);
+        break;
+      case '?':
+      case ':':
+      default:
+        print_usage(argv[0]);
+        exit(EXIT_FAILURE);
+    }
+  }
+  
+  run_sequential_test(filename, num_trials, min_sector, max_sector);
   return 0;
 }
