@@ -3,7 +3,8 @@
  *
  *       Filename:  iotest.c
  *
- *    Description:
+ *    Description:  Times raw disk reads and prints out timing data for 
+ *                  different 512-byte sectors to help me understand block I/O.
  *
  *        Version:  1.0
  *        Created:  05/07/2012 11:56:41 PM
