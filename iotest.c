@@ -82,13 +82,15 @@ void run_sequential_test(
   // allocate a page-aligned buffer
   void * buf;
   die_on_true(posix_memalign(&buf, PAGE_SIZE, 2 * PAGE_SIZE), "posix_memalign");
+  
+  // open file for raw I/O
   int f = open(filename, OPEN_FLAGS, 0);
   setup(f);
   die_on_true(f < 0, "fcntl");
+  
   // read bytes
-  int block = 0;
   int ret = 1;
-  while (ret) {
+  for (int block = 0; block < max_sector; block++) {
     struct timespec starttime;
     struct timespec endtime;
     for (int i = 0; i < num_trials; i++) {
@@ -105,8 +107,6 @@ void run_sequential_test(
         starttime.tv_nsec);
       printf("%d,%lu\n", block, elapsed);
     }
-    block++;
-    if (max_sector != 0 && block >= max_sector) break;
     die_on_true(lseek(f, PAGE_SIZE, SEEK_CUR) < 0, "lseek");
   }
   close(f);
