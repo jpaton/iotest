@@ -5,7 +5,7 @@ else
 LFLAGS := -lrt
 endif
 
-all: iotest.c
-	gcc -std=c99 -Wall -o iotest iotest.c $(LFLAGS)
+all: iotest.c barrier.c
+	gcc -std=c99 -Wall -pthread -o iotest barrier.c iotest.c $(LFLAGS)
 clean:
 	rm iotest

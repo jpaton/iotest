@@ -4,7 +4,22 @@ import sys, csv
 
 reader = csv.DictReader(open(sys.argv[1], 'r'), fieldnames = ['block', 'time'])
 
-data = sorted([(int(row['block']), int(row['time'])) for row  in reader])
+raw_data = sorted([(int(row['block']), int(row['time'])) for row  in reader])
+data = list()
+
+block = raw_data[0][0]
+total = 0.0
+N = 0.0
+for item in raw_data:
+    if item[0] != block:
+        data.append((block, total / N))
+        block = item[0]
+        total = item[1]
+        N = 1.0
+    else:
+        total += item[1]
+        N += 1
+data.append((block, total / N))
 
 if len(sys.argv) > 2:
 	maxBlock = int(sys.argv[2])
