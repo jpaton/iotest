@@ -142,11 +142,11 @@ struct thread_args * args
     die_on_true(lseek(f, sector * PAGE_SIZE, SEEK_SET) < 0, "lseek");
     for (int trial = 0; trial < args->num_trials; trial++) {
       die_on_true(lseek(f, PAGE_SIZE * args->min_sector, SEEK_SET) < 0, "lseek");
-      pthread_barrier_wait(args->barrier);
       current_time(&starttime);
-      int ret = read(f, buf, PAGE_SIZE);
-      current_time(&endtime);
       pthread_barrier_wait(args->barrier);
+      int ret = read(f, buf, PAGE_SIZE);
+      pthread_barrier_wait(args->barrier);
+      current_time(&endtime);
       die_on_true(ret < 0, "read");
       
       unsigned long elapsed = (
